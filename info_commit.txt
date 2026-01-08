@@ -1,0 +1,1 @@
+https://github.com/liviu10/laravel-boilerplate/commit/b8d2a5c93142b07fa0d13c9ac4f8ca4fbdda1230#diff-7151ebbc51cdfef8651eaa5527519c173fd8d3dc796ca93093e5fb29cc3c13df
