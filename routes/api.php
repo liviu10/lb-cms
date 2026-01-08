@@ -1,20 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use LiviuVoica\LbContact\Http\Controllers\Admin\Communication\ContactMessageController;
-use LiviuVoica\LbContact\Http\Controllers\Admin\Communication\ContactResponseController;
-use LiviuVoica\LbContact\Http\Controllers\Admin\Communication\ContactSubjectController;
-use LiviuVoica\LbContact\Http\Controllers\GuestContactMessageController;
+use LiviuVoica\LbCms\Http\Controllers\Admin\Management\CategoryController;
+use LiviuVoica\LbCms\Http\Controllers\Admin\Management\ContentVisibilityController;
 
 /*
 |--------------------------------------------------------------------------
 | Guest api routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['throttle:5,1'])
-    ->apiResource('/guest/contact/messages', GuestContactMessageController::class)
-    ->only('create', 'store')
-    ->names('guest.contact.messages');
 
 /*
 |--------------------------------------------------------------------------
@@ -22,19 +16,15 @@ Route::middleware(['throttle:5,1'])
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'throttle:5,1'])
-    ->prefix('admin/communication/contact')
-    ->as('admin.communication.contact.')
+    ->prefix('admin/management/content')
+    ->as('admin.management.content.')
     ->middleware('can:access')
     ->group(function () {
-        Route::apiResource('subjects', ContactSubjectController::class)
+        Route::apiResource('categories', CategoryController::class)
             ->except('show')
-            ->names('subjects');
+            ->names('categories');
 
-        Route::apiResource('messages', ContactMessageController::class)
-            ->only('index', 'show')
-            ->names('messages');
-
-        Route::apiResource('messages/{contactMessageId}/response', ContactResponseController::class)
-            ->only('create', 'store')
-            ->names('messages.response');
+        Route::apiResource('visibilities', ContentVisibilityController::class)
+            ->except('show', 'destroy')
+            ->names('visibilities');
     });

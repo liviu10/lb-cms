@@ -4,16 +4,16 @@ namespace LiviuVoica\LbCms\Http\Controllers\Admin\Management;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use LiviuVoica\LbCms\DTO\CategoryPayloadDTO;
+use LiviuVoica\LbCms\DTO\ContentVisibilityPayloadDTO;
 use LiviuVoica\LbCms\Http\Controllers\Controller;
-use LiviuVoica\LbCms\Http\Requests\CategoryRequest;
-use LiviuVoica\LbCms\Models\Category;
-use LiviuVoica\LbCms\Services\CategoryService;
+use LiviuVoica\LbCms\Http\Requests\ContentVisibilityRequest;
+use LiviuVoica\LbCms\Models\ContentVisibility;
+use LiviuVoica\LbCms\Services\ContentVisibilityService;
 
-class CategoryController extends Controller
+class ContentVisibilityController extends Controller
 {
-    /** @var CategoryService The category service instance. */
-    private CategoryService $categoryService;
+    /** @var ContentVisibilityService The content visibility service instance. */
+    private ContentVisibilityService $contentVisibilityService;
 
     /**
      * Initialize the controller instance.
@@ -22,15 +22,15 @@ class CategoryController extends Controller
      */
     public function __construct()
     {
-        $this->categoryService = new CategoryService(new Category);
+        $this->contentVisibilityService = new ContentVisibilityService(new ContentVisibility);
     }
 
     /**
-     * Get the list of category.
+     * Get the list of content visibility.
      */
     public function index(Request $request): JsonResponse
     {
-        $results = $this->categoryService->index();
+        $results = $this->contentVisibilityService->index();
 
         return new JsonResponse([
             'success' => true,
@@ -43,7 +43,7 @@ class CategoryController extends Controller
      */
     public function create(): JsonResponse
     {
-        $results = $this->categoryService->create();
+        $results = $this->contentVisibilityService->create();
 
         return new JsonResponse([
             'success' => true,
@@ -52,17 +52,16 @@ class CategoryController extends Controller
     }
 
     /**
-     * Create a new category.
+     * Create a new content visibility.
      */
-    public function store(CategoryRequest $request): JsonResponse
+    public function store(ContentVisibilityRequest $request): JsonResponse
     {
-        $payload = CategoryPayloadDTO::fromRequest([
+        $payload = ContentVisibilityPayloadDTO::fromRequest([
             'key' => $request->input('key'),
             'value' => $request->input('value'),
-            'is_active' => $request->boolean('is_active'),
         ]);
 
-        $results = $this->categoryService->store($payload);
+        $results = $this->contentVisibilityService->store($payload);
 
         return new JsonResponse([
             'success' => true,
@@ -75,7 +74,7 @@ class CategoryController extends Controller
      */
     public function edit(string $id): JsonResponse
     {
-        $results = $this->categoryService->edit((int) $id);
+        $results = $this->contentVisibilityService->edit((int) $id);
 
         return new JsonResponse([
             'success' => true,
@@ -84,17 +83,16 @@ class CategoryController extends Controller
     }
 
     /**
-     * Update a category.
+     * Update a content visibility.
      */
-    public function update(CategoryRequest $request, string $id): JsonResponse
+    public function update(ContentVisibilityRequest $request, string $id): JsonResponse
     {
-        $payload = CategoryPayloadDTO::fromRequest([
+        $payload = ContentVisibilityPayloadDTO::fromRequest([
             'key' => $request->input('key'),
             'value' => $request->input('value'),
-            'is_active' => $request->boolean('is_active'),
         ]);
 
-        $results = $this->categoryService->update($payload, (int) $id);
+        $results = $this->contentVisibilityService->update($payload, (int) $id);
 
         if ($results === null) {
             return new JsonResponse([
@@ -106,24 +104,6 @@ class CategoryController extends Controller
         return new JsonResponse([
             'success' => true,
             'results' => (int) $results,
-        ]);
-    }
-
-    /**
-     * Delete a category.
-     */
-    public function destroy(string $id): JsonResponse
-    {
-        $results = $this->categoryService->destroy((int) $id);
-        if ($results === false) {
-            return new JsonResponse([
-                'success' => false,
-                'error_code' => 'SUBJECT_NOT_FOUND',
-            ], 404);
-        }
-
-        return new JsonResponse([
-            'success' => true,
         ]);
     }
 }
