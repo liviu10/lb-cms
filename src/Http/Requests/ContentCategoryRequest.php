@@ -5,7 +5,7 @@ namespace LiviuVoica\LbCms\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Route;
 
-class CategoryRequest extends FormRequest
+class ContentCategoryRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -28,12 +28,12 @@ class CategoryRequest extends FormRequest
 
         $valueValidator = $this->valueValidationRule($languages);
 
-        if ($currentRouteName === 'admin.management.categories.store') {
+        if ($currentRouteName === 'admin.management.cms.categories.store') {
             $rules['value'] = array_merge(['required', 'array'], $valueValidator);
             $rules['is_active'] = ['required', 'boolean'];
         }
 
-        if ($currentRouteName === 'admin.management.categories.update') {
+        if ($currentRouteName === 'admin.management.cms.categories.update') {
             $rules['value'] = array_merge(['sometimes', 'array'], $valueValidator);
             $rules['is_active'] = ['sometimes', 'boolean'];
         }

@@ -28,11 +28,11 @@ class ContentVisibilityRequest extends FormRequest
 
         $valueValidator = $this->valueValidationRule($languages);
 
-        if ($currentRouteName === 'admin.management.categories.store') {
+        if ($currentRouteName === 'admin.management.cms.visibility.store') {
             $rules['value'] = array_merge(['required', 'array'], $valueValidator);
         }
 
-        if ($currentRouteName === 'admin.management.categories.update') {
+        if ($currentRouteName === 'admin.management.cms.visibility.update') {
             $rules['value'] = array_merge(['sometimes', 'array'], $valueValidator);
         }
 

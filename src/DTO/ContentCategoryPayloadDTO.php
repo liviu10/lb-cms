@@ -2,7 +2,7 @@
 
 namespace LiviuVoica\LbCms\DTO;
 
-final class CategoryPayloadDTO
+final class ContentCategoryPayloadDTO
 {
     /**
      * @param  array<string, string>  $value

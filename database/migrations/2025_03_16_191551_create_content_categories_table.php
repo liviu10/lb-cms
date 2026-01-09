@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
+        Schema::create('content_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique()->comment('The key of the content categories');
+            $table->string('key')->unique()->comment('The key of the content content categories');
             $table->json('value')->comment('The name of the content category in different languages');
             $table->boolean('is_active')->default(false);
             $table->foreignId('user_id')
@@ -22,8 +22,8 @@ return new class extends Migration
             $table->timestamps();
 
             // Add indexes
-            $table->index('key', 'categories_key');
-            $table->index('is_active', 'categories_is_active');
+            $table->index('key', 'content_categories_key');
+            $table->index('is_active', 'content_categories_is_active');
         });
     }
 
@@ -32,15 +32,15 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('categories', function (Blueprint $table) {
+        Schema::table('content_categories', function (Blueprint $table) {
             // Drop indexes
-            $table->dropIndex('categories_key');
-            $table->dropIndex('categories_is_active');
+            $table->dropIndex('content_categories_key');
+            $table->dropIndex('content_categories_is_active');
 
             // Drop foreign keys
             $table->dropForeign(['user_id']);
         });
 
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('content_categories');
     }
 };

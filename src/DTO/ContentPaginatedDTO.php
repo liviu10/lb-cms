@@ -4,10 +4,10 @@ namespace LiviuVoica\LbCms\DTO;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-final class CategoryPaginatedDTO
+final class ContentPaginatedDTO
 {
     /**
-     * @param  CategoryDTO[]  $data
+     * @param  ContentDTO[]  $data
      * @param  FormFieldDTO[]  $form
      */
     private function __construct(
@@ -29,9 +29,9 @@ final class CategoryPaginatedDTO
      */
     public static function fromPaginator(LengthAwarePaginator $paginator, array $form): self
     {
-        /** @var CategoryDTO[] $data */
+        /** @var ContentDTO[] $data */
         $data = array_map(
-            static fn ($item) => CategoryDTO::fromModel($item),
+            static fn ($item) => ContentDTO::fromModel($item),
             $paginator->items()
         );
 

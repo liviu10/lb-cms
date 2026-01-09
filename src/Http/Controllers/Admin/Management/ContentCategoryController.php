@@ -4,16 +4,16 @@ namespace LiviuVoica\LbCms\Http\Controllers\Admin\Management;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use LiviuVoica\LbCms\DTO\CategoryPayloadDTO;
+use LiviuVoica\LbCms\DTO\ContentCategoryPayloadDTO;
 use LiviuVoica\LbCms\Http\Controllers\Controller;
-use LiviuVoica\LbCms\Http\Requests\CategoryRequest;
-use LiviuVoica\LbCms\Models\Category;
-use LiviuVoica\LbCms\Services\CategoryService;
+use LiviuVoica\LbCms\Http\Requests\ContentCategoryRequest;
+use LiviuVoica\LbCms\Models\ContentCategory;
+use LiviuVoica\LbCms\Services\ContentCategoryService;
 
-class CategoryController extends Controller
+class ContentCategoryController extends Controller
 {
-    /** @var CategoryService The category service instance. */
-    private CategoryService $categoryService;
+    /** @var ContentCategoryService The content category service instance. */
+    private ContentCategoryService $contentCategoryService;
 
     /**
      * Initialize the controller instance.
@@ -22,15 +22,15 @@ class CategoryController extends Controller
      */
     public function __construct()
     {
-        $this->categoryService = new CategoryService(new Category);
+        $this->contentCategoryService = new ContentCategoryService(new ContentCategory);
     }
 
     /**
-     * Get the list of category.
+     * Get the list of content category.
      */
     public function index(Request $request): JsonResponse
     {
-        $results = $this->categoryService->index();
+        $results = $this->contentCategoryService->index();
 
         return new JsonResponse([
             'success' => true,
@@ -43,7 +43,7 @@ class CategoryController extends Controller
      */
     public function create(): JsonResponse
     {
-        $results = $this->categoryService->create();
+        $results = $this->contentCategoryService->create();
 
         return new JsonResponse([
             'success' => true,
@@ -52,17 +52,17 @@ class CategoryController extends Controller
     }
 
     /**
-     * Create a new category.
+     * Create a new content category.
      */
-    public function store(CategoryRequest $request): JsonResponse
+    public function store(ContentCategoryRequest $request): JsonResponse
     {
-        $payload = CategoryPayloadDTO::fromRequest([
+        $payload = ContentCategoryPayloadDTO::fromRequest([
             'key' => $request->input('key'),
             'value' => $request->input('value'),
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        $results = $this->categoryService->store($payload);
+        $results = $this->contentCategoryService->store($payload);
 
         return new JsonResponse([
             'success' => true,
@@ -75,7 +75,7 @@ class CategoryController extends Controller
      */
     public function edit(string $id): JsonResponse
     {
-        $results = $this->categoryService->edit((int) $id);
+        $results = $this->contentCategoryService->edit((int) $id);
 
         return new JsonResponse([
             'success' => true,
@@ -84,17 +84,17 @@ class CategoryController extends Controller
     }
 
     /**
-     * Update a category.
+     * Update a content content category.
      */
-    public function update(CategoryRequest $request, string $id): JsonResponse
+    public function update(ContentCategoryRequest $request, string $id): JsonResponse
     {
-        $payload = CategoryPayloadDTO::fromRequest([
+        $payload = ContentCategoryPayloadDTO::fromRequest([
             'key' => $request->input('key'),
             'value' => $request->input('value'),
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        $results = $this->categoryService->update($payload, (int) $id);
+        $results = $this->contentCategoryService->update($payload, (int) $id);
 
         if ($results === null) {
             return new JsonResponse([
@@ -110,11 +110,11 @@ class CategoryController extends Controller
     }
 
     /**
-     * Delete a category.
+     * Delete a content category.
      */
     public function destroy(string $id): JsonResponse
     {
-        $results = $this->categoryService->destroy((int) $id);
+        $results = $this->contentCategoryService->destroy((int) $id);
         if ($results === false) {
             return new JsonResponse([
                 'success' => false,

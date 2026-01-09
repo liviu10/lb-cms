@@ -5,6 +5,7 @@ namespace LiviuVoica\LbCms\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -44,5 +45,11 @@ class ContentVisibility extends Model
         return $this->belongsTo(
             config('cms.user_model')
         );
+    }
+
+    /** @return HasOne<Content> */
+    public function content(): HasOne
+    {
+        return $this->hasOne(Content::class);
     }
 }

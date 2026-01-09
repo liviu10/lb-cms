@@ -5,6 +5,7 @@ namespace LiviuVoica\LbCms\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -17,7 +18,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
-class Category extends Model
+class ContentCategory extends Model
 {
     use HasFactory;
 
@@ -47,5 +48,11 @@ class Category extends Model
         return $this->belongsTo(
             config('cms.user_model')
         );
+    }
+
+    /** @return HasOne<Content> */
+    public function content(): HasOne
+    {
+        return $this->hasOne(Content::class);
     }
 }

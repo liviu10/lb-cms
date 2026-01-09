@@ -2,9 +2,9 @@
 
 namespace LiviuVoica\LbCms\DTO;
 
-use LiviuVoica\LbCms\Models\Category;
+use LiviuVoica\LbCms\Models\ContentCategory;
 
-final class CategoryDTO
+final class ContentCategoryDTO
 {
     /**
      * @param array{
@@ -23,7 +23,7 @@ final class CategoryDTO
         public string $updated_at
     ) {}
 
-    public static function fromModel(Category $model): self
+    public static function fromModel(ContentCategory $model): self
     {
         return new self(
             id: $model->id,
