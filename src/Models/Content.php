@@ -5,18 +5,23 @@ namespace LiviuVoica\LbCms\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use LiviuVoica\LbCms\Enums\ContentType;
+use LiviuVoica\LbCms\Enums\ContentVisibility;
+use LiviuVoica\LbCms\Models\ContentMedia;
+use LiviuVoica\LbCms\Models\ContentCategory;
 
 /**
  * @property int $id
- * @property int $content_visibility_id
  * @property int $content_category_id
+ * @property ContentVisibility $visibility
  * @property ContentType $type
  * @property Carbon|null $scheduled_on
  * @property string $slug
  * @property string $url
+ * @property array<string> $tags
  * @property string $title
  * @property string|null $content
  * @property bool $allow_comments
@@ -31,12 +36,13 @@ class Content extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'content_visibility_id',
         'content_category_id',
+        'visibility',
         'type',
         'scheduled_on',
         'slug',
         'url',
+        'tags',
         'title',
         'content',
         'allow_comments',
@@ -52,12 +58,20 @@ class Content extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'visibility' => 'array',
         'scheduled_on' => 'datetime:d.m.Y H:i',
+        'tags' => 'array',
         'allow_comments' => 'boolean',
         'allow_share' => 'boolean',
         'created_at' => 'datetime:d.m.Y H:i',
         'updated_at' => 'datetime:d.m.Y H:i',
     ];
+
+    /** @return BelongsTo<ContentCategory> */
+    public function content_category(): BelongsTo
+    {
+        return $this->belongsTo(ContentCategory::class, 'content_category_id');
+    }
 
     public function user(): BelongsTo
     {
@@ -66,15 +80,9 @@ class Content extends Model
         );
     }
 
-    /** @return BelongsTo<ContentVisibility> */
-    public function content_visibility(): BelongsTo
+    /** @return HasOne<ContentMedia> */
+    public function content_media(): BelongsTo
     {
-        return $this->belongsTo(ContentVisibility::class, 'content_visibility_id');
-    }
-
-    /** @return BelongsTo<ContentCategory> */
-    public function content_category(): BelongsTo
-    {
-        return $this->belongsTo(ContentCategory::class, 'content_category_id');
+        return $this->hasOne(ContentMedia::class);
     }
 }

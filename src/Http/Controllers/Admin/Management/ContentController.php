@@ -60,10 +60,11 @@ class ContentController extends Controller
     public function store(ContentRequest $request): JsonResponse
     {
         $payload = ContentPayloadDTO::fromRequest([
-            'content_visibility_id' => $request->input('content_visibility_id'),
             'content_category_id' => $request->input('content_category_id'),
+            'visibility' => $request->input('visibility'),
             'type' => $request->input('type'),
             'scheduled_on' => $request->input('scheduled_on'),
+            'tags' => $request->input('tags'),
             'title' => $request->input('title'),
             'allow_comments' => $request->boolean('allow_comments'),
             'allow_share' => $request->boolean('allow_share'),
@@ -116,10 +117,11 @@ class ContentController extends Controller
     public function update(ContentRequest $request, string $id): JsonResponse
     {
         $payload = ContentPayloadDTO::fromRequest([
-            'content_visibility_id' => $request->input('content_visibility_id'),
             'content_category_id' => $request->input('content_category_id'),
+            'visibility' => $request->input('visibility'),
             'type' => $request->input('type'),
             'scheduled_on' => $request->input('scheduled_on'),
+            'tags' => $request->input('tags'),
             'title' => $request->input('title'),
             'allow_comments' => $request->boolean('allow_comments'),
             'allow_share' => $request->boolean('allow_share'),

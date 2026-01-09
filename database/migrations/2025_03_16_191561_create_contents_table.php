@@ -13,12 +13,20 @@ return new class extends Migration
     {
         Schema::create('contents', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('content_visibility_id')
-                ->constrained('content_visibilities')
-                ->onUpdate('cascade');
             $table->foreignId('content_category_id')
                 ->constrained('content_categories')
                 ->onUpdate('cascade');
+            $table->enum('visibility', [
+                'Published',
+                'Draft',
+                'Scheduled',
+                'Trashed',
+                'Private',
+                'Hidden',
+                'Archived',
+                'Pending Review',
+                'Restricted'
+            ])->default('Draft');
             $table->enum('type', ['Page', 'Article'])->default('Page');
             $table->timestamp('scheduled_on')
                 ->nullable()
@@ -26,6 +34,7 @@ return new class extends Migration
                 ->comment('Date and time when the content becomes publicly available');
             $table->string('slug')->comment('URL-friendly unique identifier for the content');
             $table->string('url')->comment('Full or relative URL used to access the content');
+            $table->json('tags')->comment('The list of tags');
             $table->string('title');
             $table->longText('content')->nullable();
             $table->boolean('allow_comments')
@@ -59,6 +68,7 @@ return new class extends Migration
             $table->dropIndex('contents_type');
 
             // Drop foreign keys
+            $table->dropForeign(['content_category_id']);
             $table->dropForeign(['user_id']);
         });
 

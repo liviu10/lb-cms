@@ -11,7 +11,6 @@ use LiviuVoica\LbCms\Models\Content;
 use LiviuVoica\LbCms\Utilities\BuildFormTrait;
 use LiviuVoica\LbCms\Utilities\DesiredFieldsTrait;
 use LiviuVoica\LbCms\Utilities\FilterAndOrderTrait;
-use LiviuVoica\LbCms\Services\ContentVisibilityService;
 use LiviuVoica\LbCms\Services\ContentCategoryService;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
@@ -38,7 +37,7 @@ class ContentService
         $tableName = (new Content)->getTable();
 
         $result = DB::select("SHOW COLUMNS FROM {$tableName} WHERE Field = ?", [$columnName]);
-        preg_match("/enum\((.*?)\)/", $result[0]->Type, $matches); // = returneaza int sau false
+        preg_match("/enum\((.*?)\)/", $result[0]->Type, $matches);
 
         $enumValues = isset($matches[1])
             ? (array) preg_split("/\s*,\s*/", trim($matches[1], "'"))
@@ -97,14 +96,14 @@ class ContentService
      */
     public function index(array $params): ContentPaginatedDTO
     {
-        $desiredFields = ['id', 'content_visibility_id', 'content_category_id', 'type', 'scheduled_on', 'url', 'title', 'user_id'];
+        $desiredFields = ['id', 'content_category_id', 'visibility', 'type', 'scheduled_on', 'url', 'title', 'user_id'];
 
         $fields = $this->getFields($this->content, $desiredFields);
 
         $form = $this->buildForm($this->content, $fields);
         $formOptions = [
-            'content_visibility_id' => ContentVisibilityService::getAllActiveContentVisibilities(),
             'content_category_id' => ContentCategoryService::getAllActiveContentCategories(),
+            'visibility' => self::getContentEnum('visibility'),
             'type' => self::getContentEnum('type'),
         ];
         foreach ($form as $field) {
@@ -117,9 +116,6 @@ class ContentService
 
         $query = $this->content->select($fields)
             ->with([
-                'content_visibility' => function ($query) {
-                    $query->select('id', 'value');
-                },
                 'content_category' => function ($query) {
                     $query->select('id', 'value')->where('is_active', true);
                 },
@@ -138,15 +134,6 @@ class ContentService
         $locale = (string) app()->getLocale();
 
         $paginator->getCollection()->transform(function ($item) use ($locale) {
-            if ($item->relationLoaded('content_visibility')) {
-                $item->content_visibility->transform(function ($visibility) use ($locale) {
-                    return [
-                        'value' => (int) $visibility->id,
-                        'label' => (string) ($visibility->value[$locale] ?? $visibility->value['en']),
-                    ];
-                });
-            }
-
             if ($item->relationLoaded('content_category')) {
                 $item->content_category->transform(function ($category) use ($locale) {
                     return [
@@ -172,10 +159,11 @@ class ContentService
     public function create(): array
     {
         $desiredFields = [
-            'content_visibility_id',
             'content_category_id',
+            'visibility',
             'type',
             'scheduled_on',
+            'tags',
             'title',
             'allow_comments',
             'allow_share',
@@ -194,10 +182,11 @@ class ContentService
     public function store(ContentPayloadDTO $payload): int
     {
         $data = [
-            'content_visibility_id' => (int) $payload->content_visibility_id,
             'content_category_id' => (int) $payload->content_category_id,
+            'visibility' => (string) $payload->visibility,
             'type' => (string) $payload->type,
             'scheduled_on' => $payload->scheduled_on,
+            'tags' => $payload->tags,
             'title' => $payload->title,
             'allow_comments' => (bool) $payload->allow_comments,
             'allow_share' => (bool) $payload->allow_share,
@@ -220,11 +209,12 @@ class ContentService
     public function show(int $contentId): ?ContentDetailsDTO
     {
         $desiredFields = [
-            'content_visibility_id',
             'content_category_id',
+            'visibility',
             'type',
             'slug',
             'url',
+            'tags',
             'title',
             'allow_comments',
             'allow_share',
@@ -235,9 +225,6 @@ class ContentService
 
         $content = $this->content->select($fields)
             ->with([
-                'content_visibility' => function ($query) {
-                    $query->select('id', 'value');
-                },
                 'content_category' => function ($query) {
                     $query->select('id', 'value')->where('is_active', true);
                 },
@@ -252,9 +239,6 @@ class ContentService
         }
 
         $locale = (string) app()->getLocale();
-
-        $visibility = $content->content_visibility;
-        $content->content_visibility->value = $content->value[$locale] ?? $visibility->value['en'];
 
         $category = $content->content_category;
         $content->content_category->value = $content->value[$locale()] ?? $category->value['en'];
@@ -272,10 +256,11 @@ class ContentService
     public function edit(int $contentId): array
     {
         $desiredFields = [
-            'content_visibility_id',
             'content_category_id',
+            'visibility',
             'type',
             'scheduled_on',
+            'tags',
             'title',
             'allow_comments',
             'allow_share',
@@ -306,10 +291,11 @@ class ContentService
             return null;
         }
         $data = [
-            'content_visibility_id' => (int) $payload->content_visibility_id ?? $content->content_visibility_id,
             'content_category_id' => (int) $payload->content_category_id ?? $content->content_category_id,
+            'visibility' => (string) $payload->visibility ?? $content->visibility,
             'type' => (string) $payload->type ?? $content->type,
             'scheduled_on' => $payload->scheduled_on ?? $content->scheduled_on,
+            'tags' => $payload->tags ?? $content->tags,
             'title' => $payload->title ?? $content->title,
             'allow_comments' => (bool) $payload->allow_comments ?? $content->allow_comments,
             'allow_share' => (bool) $payload->allow_share ?? $content->allow_share,
