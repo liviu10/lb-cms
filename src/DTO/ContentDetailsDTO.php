@@ -11,6 +11,7 @@ final class ContentDetailsDTO
     /**
      * @param array{value: int, label: string} $content_category
      * @param array<string> $tags
+     * @param array<int, array{title: string, path: string}> $media_files
      * @param array{id: int, full_name: string} $user
      */
     private function __construct(
@@ -23,6 +24,7 @@ final class ContentDetailsDTO
         public string $url,
         public array $tags,
         public string $title,
+        public array $media_files = [],
         public int $user_id,
         public array $user,
         public string $created_at,
@@ -41,6 +43,10 @@ final class ContentDetailsDTO
             url: $model->url,
             tags: $model->tags,
             title: $model->title,
+            media_files: $model->media->map(fn($m) => [
+                'title' => $m->title,
+                'path' => $m->path,
+            ])->toArray(),
             user_id: $model->user_id,
             user: $model->user,
             created_at: $model->created_at->toDateTimeString(),

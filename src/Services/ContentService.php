@@ -16,6 +16,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use LiviuVoica\LbCms\DTO\ContentDetailsDTO;
 use LiviuVoica\LbCms\Enums\ContentType;
+use Illuminate\Support\Facades\Storage;
+use LiviuVoica\LbCms\Enums\ContentMediaType;
 
 class ContentService
 {
@@ -165,11 +167,16 @@ class ContentService
             'scheduled_on',
             'tags',
             'title',
-            'allow_comments',
-            'allow_share',
+            'content',
         ];
 
         $form = $this->buildForm($this->content, $this->getFields($this->content, $desiredFields));
+
+        $form['content_media_files'] = [
+            'key' => 'content_media_files',
+            'type' => 'file',
+            'value' => '',
+        ];
 
         return $form;
     }
@@ -188,8 +195,8 @@ class ContentService
             'scheduled_on' => $payload->scheduled_on,
             'tags' => $payload->tags,
             'title' => $payload->title,
-            'allow_comments' => (bool) $payload->allow_comments,
-            'allow_share' => (bool) $payload->allow_share,
+            'content' => $payload->content ?? null,
+            'content_media_files' => $payload->content_media_files,
         ];
 
         $data['slug'] = Str::slug($data['title']);
@@ -197,6 +204,22 @@ class ContentService
         $data['user_id'] = (int) auth()->id();
 
         $content = Content::create($data);
+
+        if (! empty($payload->content_media_files)) {
+            foreach ($payload->content_media_files as $file) {
+                $mediaType = $this->detectMediaType($file['extension'], $file['client_mime_type']);
+                $directory = "uploads/content/{$content->id}/" . strtolower($mediaType);
+                $contents = file_get_contents($file['temporary_path']);
+                $path = Storage::disk('local')->put($directory . '/' . $file['original_name'], $contents);
+
+                $content->media()->create([
+                    'type' => $mediaType,
+                    'path' => $path,
+                    'title' => $file['original_name'],
+                    'metadata' => null,
+                ]);
+            }
+        }
 
         return $content->id;
     }
@@ -216,8 +239,6 @@ class ContentService
             'url',
             'tags',
             'title',
-            'allow_comments',
-            'allow_share',
             'user_id',
         ];
 
@@ -227,6 +248,9 @@ class ContentService
             ->with([
                 'content_category' => function ($query) {
                     $query->select('id', 'value')->where('is_active', true);
+                },
+                'media' => function ($query) {
+                    $query->select('id', 'content_id', 'title', 'path');
                 },
                 'user' => function ($query) {
                     $query->select('id', 'full_name');
@@ -242,6 +266,11 @@ class ContentService
 
         $category = $content->content_category;
         $content->content_category->value = $content->value[$locale()] ?? $category->value['en'];
+
+        $content->media_files = $content->media->map(fn($m) => [
+            'title' => $m->title,
+            'path' => $m->path,
+        ])->toArray();
 
         return ContentDetailsDTO::fromModel($content);
     }
@@ -262,8 +291,6 @@ class ContentService
             'scheduled_on',
             'tags',
             'title',
-            'allow_comments',
-            'allow_share',
         ];
 
         $fields = $this->getFields($this->content, $desiredFields);
@@ -297,8 +324,6 @@ class ContentService
             'scheduled_on' => $payload->scheduled_on ?? $content->scheduled_on,
             'tags' => $payload->tags ?? $content->tags,
             'title' => $payload->title ?? $content->title,
-            'allow_comments' => (bool) $payload->allow_comments ?? $content->allow_comments,
-            'allow_share' => (bool) $payload->allow_share ?? $content->allow_share,
             'user_id' => (int) auth()->id(),
         ];
 
@@ -307,6 +332,44 @@ class ContentService
         $data['user_id'] = (int) auth()->id();
 
         $content->update($data);
+
+        $existingMediaFiles = $content->media()->get();
+        $payloadFilenames = array_map(fn($f) => $f['original_name'], $payload->content_media_files ?? []);
+
+        // Delete media that exist in DB but are not in payload
+        foreach ($existingMediaFiles as $media) {
+            if (! in_array($media->title, $payloadFilenames)) {
+                if (Storage::disk('local')->exists($media->path)) {
+                    Storage::disk('local')->delete($media->path);
+                }
+
+                $media->delete();
+            }
+        }
+
+        // Add new media files (your original if block)
+        if (! empty($payload->content_media_files)) {
+            foreach ($payload->content_media_files as $file) {
+                // Skip file if it already exists in DB (title match)
+                $alreadyExists = $content->media()->where('title', $file['original_name'])->exists();
+                if ($alreadyExists) {
+                    continue;
+                }
+
+                $mediaType = $this->detectMediaType($file['extension']);
+                $directory = "uploads/content/{$content->id}/" . strtolower($mediaType);
+
+                $contents = file_get_contents($file['temporary_path']);
+                $path = Storage::disk('local')->put($directory . '/' . $file['original_name'], $contents);
+
+                $content->media()->create([
+                    'type' => $mediaType,
+                    'path' => $path,
+                    'title' => $file['original_name'],
+                    'metadata' => null,
+                ]);
+            }
+        }
 
         return $content->id;
     }
@@ -319,6 +382,10 @@ class ContentService
         $content = $this->content->find($contentId);
         if (! $content) {
             return false;
+        }
+
+        foreach ($content->media as $media) {
+            $media->delete();
         }
 
         $content->delete();
@@ -338,6 +405,40 @@ class ContentService
 
         $content->restore();
 
+        foreach ($content->media()->withTrashed()->get() as $media) {
+            $media->restore();
+        }
+
+        return true;
+    }
+
+    /**
+     * Force delete a content along with all its associated media.
+     */
+    public function forceDestroy(int $contentId): bool
+    {
+        $content = $this->content->withTrashed()->with('media')->find($contentId);
+        if (! $content) {
+            return false;
+        }
+
+        // Delete all associated media files from storage and DB
+        foreach ($content->media()->withTrashed()->get() as $media) {
+            if (Storage::disk('local')->exists($media->path)) {
+                Storage::disk('local')->delete($media->path);
+            }
+
+            $media->forceDelete();
+        }
+
+        // Optionally delete the content's directory entirely
+        $contentDirectory = "uploads/content/{$content->id}";
+        if (Storage::disk('local')->exists($contentDirectory)) {
+            Storage::disk('local')->deleteDirectory($contentDirectory);
+        }
+
+        $content->forceDelete();
+
         return true;
     }
 
@@ -354,5 +455,24 @@ class ContentService
         }
 
         return config('cms.app_url') . "{$slug}";
+    }
+
+    /**
+     * Detects the appropriate ContentMediaType based on file extension or MIME type.
+     *
+     * @param string $extension
+     * @return string
+     */
+    private function detectMediaType(string $extension): string
+    {
+        $extension = strtolower($extension);
+
+        return match (true) {
+            in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']) => ContentMediaType::IMAGES->value,
+            in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'ppt', 'pptx']) => ContentMediaType::DOCUMENTS->value,
+            in_array($extension, ['mp4', 'avi', 'mov', 'mkv', 'webm']) => ContentMediaType::VIDEO->value,
+            in_array($extension, ['mp3', 'wav', 'ogg', 'flac', 'aac']) => ContentMediaType::AUDIO->value,
+            default => ContentMediaType::OTHERS->value,
+        };
     }
 }

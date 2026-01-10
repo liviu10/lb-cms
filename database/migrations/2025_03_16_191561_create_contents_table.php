@@ -37,12 +37,6 @@ return new class extends Migration
             $table->json('tags')->comment('The list of tags');
             $table->string('title');
             $table->longText('content')->nullable();
-            $table->boolean('allow_comments')
-                ->default(false)
-                ->comment('Whether users are allowed to post comments');
-            $table->boolean('allow_share')
-                ->default(false)
-                ->comment('Whether the content can be shared on external platforms');
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->onUpdate('cascade');
@@ -50,9 +44,10 @@ return new class extends Migration
             $table->softDeletes();
 
             // Add indexes
+            $table->index('visibility', 'contents_visibility');
+            $table->index('type', 'contents_type');
             $table->index('scheduled_on', 'contents_scheduled_on');
             $table->index('title', 'contents_title');
-            $table->index('type', 'contents_type');
         });
     }
 
@@ -63,9 +58,10 @@ return new class extends Migration
     {
         Schema::table('contents', function (Blueprint $table) {
             // Drop indexes
+            $table->dropIndex('contents_visibility');
+            $table->dropIndex('contents_type');
             $table->dropIndex('contents_scheduled_on');
             $table->dropIndex('contents_title');
-            $table->dropIndex('contents_type');
 
             // Drop foreign keys
             $table->dropForeign(['content_category_id']);

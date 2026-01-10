@@ -4,7 +4,20 @@ namespace LiviuVoica\LbCms\DTO;
 
 final class ContentPayloadDTO
 {
-    /** @param array<string> $tags */
+    /** 
+     * @param array<string> $tags
+     * @param array<int, array{
+     *     original_name: string,
+     *     client_mime_type: string,
+     *     size: int,
+     *     error: int,
+     *     temporary_path: string,
+     *     extension: string,
+     *     guessed_extension: string,
+     *     hash_name: string,
+     *     is_valid: bool,
+     * }> $content_media_files
+     */
     private function __construct(
         public int $content_category_id,
         public string $visibility,
@@ -12,8 +25,8 @@ final class ContentPayloadDTO
         public string $scheduled_on,
         public array $tags,
         public string $title,
-        public bool $allow_comments,
-        public bool $allow_share,
+        public string|null $content,
+        public array|null $content_media_files
     ) {}
 
     /**
@@ -24,8 +37,18 @@ final class ContentPayloadDTO
      *   scheduled_on: string,
      *   tags: array<string>,
      *   title: string,
-     *   allow_comments: bool,
-     *   allow_share: bool,
+     *   content: string|null,
+     *   content_media_files: array<int, array{
+     *     original_name: string,
+     *     client_mime_type: string,
+     *     size: int,
+     *     error: int,
+     *     temporary_path: string,
+     *     extension: string,
+     *     guessed_extension: string,
+     *     hash_name: string,
+     *     is_valid: bool,
+     *   }>,
      * } $payload
      */
     public static function fromRequest(array $payload): self
@@ -37,8 +60,8 @@ final class ContentPayloadDTO
             scheduled_on: $payload['scheduled_on'],
             tags: $payload['tags'],
             title: $payload['title'],
-            allow_comments: $payload['allow_comments'],
-            allow_share: $payload['allow_share'],
+            content: $payload['content'] ?? null,
+            content_media_files: $payload['content_media_files'] ?? null,
         );
     }
 }

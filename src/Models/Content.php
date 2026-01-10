@@ -5,7 +5,7 @@ namespace LiviuVoica\LbCms\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use LiviuVoica\LbCms\Enums\ContentType;
@@ -24,8 +24,6 @@ use LiviuVoica\LbCms\Models\ContentCategory;
  * @property array<string> $tags
  * @property string $title
  * @property string|null $content
- * @property bool $allow_comments
- * @property bool $allow_share
  * @property int $user_id
  * @property array{id:int, full_name:string} $user
  * @property Carbon $created_at
@@ -45,8 +43,6 @@ class Content extends Model
         'tags',
         'title',
         'content',
-        'allow_comments',
-        'allow_share',
         'user_id',
     ];
 
@@ -61,8 +57,6 @@ class Content extends Model
         'visibility' => 'array',
         'scheduled_on' => 'datetime:d.m.Y H:i',
         'tags' => 'array',
-        'allow_comments' => 'boolean',
-        'allow_share' => 'boolean',
         'created_at' => 'datetime:d.m.Y H:i',
         'updated_at' => 'datetime:d.m.Y H:i',
     ];
@@ -80,9 +74,9 @@ class Content extends Model
         );
     }
 
-    /** @return HasOne<ContentMedia> */
-    public function content_media(): BelongsTo
+    /** @return HasMany<ContentMedia> */
+    public function content_media(): HasMany
     {
-        return $this->hasOne(ContentMedia::class);
+        return $this->hasMany(ContentMedia::class);
     }
 }

@@ -66,8 +66,8 @@ class ContentController extends Controller
             'scheduled_on' => $request->input('scheduled_on'),
             'tags' => $request->input('tags'),
             'title' => $request->input('title'),
-            'allow_comments' => $request->boolean('allow_comments'),
-            'allow_share' => $request->boolean('allow_share'),
+            'content' => $request->input('content') ?? null,
+            'content_media_files' => $request->files('content_media_files') ?? null,
         ]);
 
         $results = $this->contentService->store($payload);
@@ -123,8 +123,8 @@ class ContentController extends Controller
             'scheduled_on' => $request->input('scheduled_on'),
             'tags' => $request->input('tags'),
             'title' => $request->input('title'),
-            'allow_comments' => $request->boolean('allow_comments'),
-            'allow_share' => $request->boolean('allow_share'),
+            'content' => $request->input('content') ?? null,
+            'content_media_files' => $request->files('content_media_files') ?? null,
         ]);
 
         $results = $this->contentService->update($payload, (int) $id);
@@ -166,6 +166,24 @@ class ContentController extends Controller
     public function restore(string $id): JsonResponse
     {
         $results = $this->contentService->restore((int) $id);
+        if ($results === false) {
+            return new JsonResponse([
+                'success' => false,
+                'error_code' => 'CONTENT_NOT_FOUND',
+            ], 404);
+        }
+
+        return new JsonResponse([
+            'success' => true,
+        ]);
+    }
+
+    /**
+     * Force delete a content.
+     */
+    public function forceDestroy(string $id): JsonResponse
+    {
+        $results = $this->contentService->forceDestroy((int) $id);
         if ($results === false) {
             return new JsonResponse([
                 'success' => false,

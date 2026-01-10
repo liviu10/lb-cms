@@ -37,8 +37,18 @@ class ContentRequest extends FormRequest
                 'tags' => 'required|array',
                 'tags.*' => 'string|min:5|max:50|regex:/^[A-Za-z0-9 _-]+$/',
                 'title' => 'required|string|min:5|max:120|regex:/^[A-Za-z0-9 .,;:!?\'"\-\(\)&\/]+$/',
-                'allow_comments' => 'required|boolean',
-                'allow_share' => 'required|boolean',
+                'content' => [
+                    'sometimes',
+                    'string',
+                    'min:300',
+                    'max:65535',
+                    function ($attribute, $value, $fail) {
+                        $pattern = '/<script\b|<iframe\b|<object\b|<embed\b|\bon\w+\s*=|javascript:|data:text\/javascript|expression\([^\)]*\)|<\?(php)?/i';
+                        if (preg_match($pattern, $value)) {
+                            $fail('content.no_scripts_allowed');
+                        }
+                    },
+                ],
             ];
         }
 
@@ -51,8 +61,18 @@ class ContentRequest extends FormRequest
                 'tags' => 'sometimes|array',
                 'tags.*' => 'string|min:5|max:50|regex:/^[A-Za-z0-9 _-]+$/',
                 'title' => 'sometimes|string|min:5|max:120|regex:/^[A-Za-z0-9 .,;:!?\'"\-\(\)&\/]+$/',
-                'allow_comments' => 'sometimes|boolean',
-                'allow_share' => 'sometimes|boolean',
+                'content' => [
+                    'sometimes',
+                    'string',
+                    'min:300',
+                    'max:65535',
+                    function ($attribute, $value, $fail) {
+                        $pattern = '/<script\b|<iframe\b|<object\b|<embed\b|\bon\w+\s*=|javascript:|data:text\/javascript|expression\([^\)]*\)|<\?(php)?/i';
+                        if (preg_match($pattern, $value)) {
+                            $fail('content.no_scripts_allowed');
+                        }
+                    },
+                ],
             ];
         }
 
@@ -86,10 +106,10 @@ class ContentRequest extends FormRequest
             'title.min' => __('translations.validations.title.min'),
             'title.max' => __('translations.validations.title.max'),
             'title.regex' => __('translations.validations.title.regex'),
-            'allow_comments.required' => __('translations.validations.allow_comments.required'),
-            'allow_comments.boolean' => __('translations.validations.allow_comments.boolean'),
-            'allow_share.required' => __('translations.validations.allow_share.required'),
-            'allow_share.boolean' => __('translations.validations.allow_share.boolean'),
+            'content.string' => __('translations.validations.content.string'),
+            'content.min' => __('translations.validations.content.min'),
+            'content.max' => __('translations.validations.content.max'),
+            'content.no_scripts_allowed' => __('translations.validations.content.no_scripts_allowed'),
         ];
     }
 }

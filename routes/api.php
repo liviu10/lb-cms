@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use LiviuVoica\LbCms\Http\Controllers\Admin\Management\ContentCategoryController;
 use LiviuVoica\LbCms\Http\Controllers\Admin\Management\ContentController;
-use LiviuVoica\LbCms\Http\Controllers\Admin\Management\ContentMediaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,10 +27,8 @@ Route::middleware(['auth:sanctum', 'throttle:5,1'])
 
         Route::patch('/contents/{id}/restore', [ContentController::class, 'restore'])
             ->name('contents.restore');
+        Route::delete('/contents/{id}/force', [ContentController::class, 'forceDestroy'])
+            ->name('contents.forceDestroy');
         Route::apiResource('/contents', ContentController::class)
             ->names('contents');
-
-        Route::apiResource('/media', ContentMediaController::class)
-            ->only('create', 'edit')
-            ->names('media');
     });

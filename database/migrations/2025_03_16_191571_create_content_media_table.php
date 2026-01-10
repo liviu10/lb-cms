@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('title');
             $table->json('metadata')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             // Add indexes
             $table->index('type', 'content_media_type');

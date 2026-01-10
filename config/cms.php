@@ -20,4 +20,10 @@ return [
      * The supported languages for contact system.
      */
     'supported_languages' => ['en', 'ro'],
+
+    /**
+     * Number of days a soft-deleted content is kept before being permanently removed
+     * together with all its associated media files.
+     */
+    'content_force_delete_after_days' => 30,
 ];
