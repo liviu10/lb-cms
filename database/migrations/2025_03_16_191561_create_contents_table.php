@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('content_category_id')
                 ->constrained('content_categories')
+                ->onDelete('restrict')
                 ->onUpdate('cascade');
             $table->enum('visibility', [
                 'Published',
@@ -27,7 +28,19 @@ return new class extends Migration
                 'Pending Review',
                 'Restricted'
             ])->default('Draft');
-            $table->enum('type', ['Page', 'Article'])->default('Page');
+            $table->enum('type', [
+                'Page',
+                'Article',
+                'Product',
+                'Event',
+                'Portfolio',
+                'Service',
+                'Testimonial',
+                'FAQ',
+                'Gallery',
+                'Documentation',
+                'Landing'
+            ])->default('Page');
             $table->timestamp('scheduled_on')
                 ->nullable()
                 ->default(null)
@@ -37,6 +50,12 @@ return new class extends Migration
             $table->json('tags')->comment('The list of tags');
             $table->string('title');
             $table->longText('content')->nullable();
+            $table->boolean('allow_comments')
+                ->default(false)
+                ->comment('Whether users are allowed to post comments');
+            $table->boolean('allow_share')
+                ->default(false)
+                ->comment('Whether the content can be shared on external platforms');
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->onUpdate('cascade');
@@ -47,6 +66,7 @@ return new class extends Migration
             $table->index('visibility', 'contents_visibility');
             $table->index('type', 'contents_type');
             $table->index('scheduled_on', 'contents_scheduled_on');
+            $table->index('slug', 'contents_slug');
             $table->index('title', 'contents_title');
         });
     }
@@ -61,6 +81,7 @@ return new class extends Migration
             $table->dropIndex('contents_visibility');
             $table->dropIndex('contents_type');
             $table->dropIndex('contents_scheduled_on');
+            $table->dropIndex('contents_slug');
             $table->dropIndex('contents_title');
 
             // Drop foreign keys

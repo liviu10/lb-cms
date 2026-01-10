@@ -34,6 +34,7 @@ class ContentRequest extends FormRequest
                 'visibility' => ['required', Rule::in(array_column(ContentVisibility::cases(), 'value'))],
                 'type' => ['required', Rule::in(array_column(ContentType::cases(), 'value'))],
                 'scheduled_on' => 'sometimes|date|after:today',
+                'slug' => 'required|unique:contents|string|min:5|max:150|regex:/^[a-zA-Z0-9\/-]+$/',
                 'tags' => 'required|array',
                 'tags.*' => 'string|min:5|max:50|regex:/^[A-Za-z0-9 _-]+$/',
                 'title' => 'required|string|min:5|max:120|regex:/^[A-Za-z0-9 .,;:!?\'"\-\(\)&\/]+$/',
@@ -53,11 +54,21 @@ class ContentRequest extends FormRequest
         }
 
         if ($currentRouteName === 'admin.management.cms.contents.update') {
+            $contentId = $this->route('content')->id;
+
             $rules = [
                 'content_category_id'   => 'sometimes|exists:content_categories,id',
                 'visibility' => ['sometimes', Rule::in(array_column(ContentVisibility::cases(), 'value'))],
                 'type' => ['sometimes', Rule::in(array_column(ContentType::cases(), 'value'))],
                 'scheduled_on' => 'sometimes|date|after:today',
+                'slug' => [
+                    'sometimes',
+                    'string',
+                    'min:5',
+                    'max:150',
+                    'regex:/^[a-z0-9-]+$/',
+                    Rule::unique('contents')->ignore($contentId),
+                ],
                 'tags' => 'sometimes|array',
                 'tags.*' => 'string|min:5|max:50|regex:/^[A-Za-z0-9 _-]+$/',
                 'title' => 'sometimes|string|min:5|max:120|regex:/^[A-Za-z0-9 .,;:!?\'"\-\(\)&\/]+$/',
@@ -95,6 +106,12 @@ class ContentRequest extends FormRequest
             'type.in' => __('translations.validations.type.in'),
             'scheduled_on.date' => __('translations.validations.scheduled_on.date'),
             'scheduled_on.after' => __('translations.validations.scheduled_on.after'),
+            'slug.required' => __('translations.validations.slug.required'),
+            'slug.unique' => __('translations.validations.slug.unique'),
+            'slug.string' => __('translations.validations.slug.string'),
+            'slug.min' => __('translations.validations.slug.min'),
+            'slug.max' => __('translations.validations.slug.max'),
+            'slug.regex' => __('translations.validations.slug.regex'),
             'tags.required' => __('translations.validations.tags.required'),
             'tags.array' => __('translations.validations.tags.array'),
             'tags.*.string' => __('translations.validations.tags.string'),

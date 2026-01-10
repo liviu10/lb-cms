@@ -10,11 +10,11 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property string $key
  * @property string $value
  * @property bool $is_active
+ * @property array{id: int, content_category_id: int, visibility: string, type: string, url: string, title: string} $content
  * @property int $user_id
- * @property array{id:int, full_name:string} $user
+ * @property array{id: int, full_name: string} $user
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -23,7 +23,6 @@ class ContentCategory extends Model
     use HasFactory;
 
     protected $fillable = [
-        'key',
         'value',
         'is_active',
         'user_id',

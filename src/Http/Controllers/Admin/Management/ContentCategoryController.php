@@ -4,7 +4,6 @@ namespace LiviuVoica\LbCms\Http\Controllers\Admin\Management;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use LiviuVoica\LbCms\DTO\ContentCategoryPayloadDTO;
 use LiviuVoica\LbCms\Http\Controllers\Controller;
 use LiviuVoica\LbCms\Http\Requests\ContentCategoryRequest;
 use LiviuVoica\LbCms\Models\ContentCategory;
@@ -56,11 +55,8 @@ class ContentCategoryController extends Controller
      */
     public function store(ContentCategoryRequest $request): JsonResponse
     {
-        $payload = ContentCategoryPayloadDTO::fromRequest([
-            'key' => $request->input('key'),
-            'value' => $request->input('value'),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        /** @var array{value: array<string, string>, is_active?: bool} */
+        $payload = $request->only('value', 'is_active');
 
         $results = $this->contentCategoryService->store($payload);
 
@@ -88,11 +84,8 @@ class ContentCategoryController extends Controller
      */
     public function update(ContentCategoryRequest $request, string $id): JsonResponse
     {
-        $payload = ContentCategoryPayloadDTO::fromRequest([
-            'key' => $request->input('key'),
-            'value' => $request->input('value'),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        /** @var array{value: array<string, string>, is_active?: bool} */
+        $payload = $request->only('value', 'is_active');
 
         $results = $this->contentCategoryService->update($payload, (int) $id);
 

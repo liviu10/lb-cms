@@ -2,8 +2,9 @@
 
 namespace LiviuVoica\LbCms\Services;
 
-use LiviuVoica\LbCms\DTO\ContentCategoryPaginatedDTO;
-use LiviuVoica\LbCms\DTO\ContentCategoryPayloadDTO;
+use Exception;
+use LiviuVoica\LbCms\DTO\ContentCategoryDTO;
+use LiviuVoica\LbCms\DTO\PaginatedDTO;
 use LiviuVoica\LbCms\DTO\FormFieldDTO;
 use LiviuVoica\LbCms\Models\ContentCategory;
 use LiviuVoica\LbCms\Utilities\BuildFormTrait;
@@ -29,7 +30,7 @@ class ContentCategoryService
         return ContentCategory::where('is_active', true)
             ->orderBy('id', 'asc')
             ->get(['id', 'value'])
-            ->map(fn ($item) => [
+            ->map(fn($item) => [
                 'value' => (int) $item->id,
                 'label' => (string) (
                     isset($item->value[$locale])
@@ -64,11 +65,13 @@ class ContentCategoryService
     /**
      * Get the list of content categories.
      *
-     * @see ContentCategoryPaginatedDTO
+     * @return PaginatedDTO<ContentCategoryDTO>
+     * @see PaginatedDTO
+     * @see ContentCategoryDTO
      */
-    public function index(): ContentCategoryPaginatedDTO
+    public function index(): PaginatedDTO
     {
-        $desiredFields = ['id', 'key', 'value', 'is_active', 'user_id'];
+        $desiredFields = ['id', 'value', 'is_active', 'user_id'];
 
         $fields = $this->getFields($this->contentCategory, $desiredFields);
 
@@ -76,23 +79,35 @@ class ContentCategoryService
         $formOptions = [
             'key' => self::getAllActiveContentCategories(),
         ];
-        foreach ($form as $field) {
+        $form = array_map(function (FormFieldDTO $field) use ($formOptions) {
             $key = $field->key;
             if (isset($formOptions[$key])) {
-                $field->type = 'select';
-                $field->options = $formOptions[$key];
+                return FormFieldDTO::fromArray([
+                    'key' => $field->key,
+                    'type' => 'select',
+                    'value' => $field->value,
+                    'options' => $formOptions[$key],
+                ]);
             }
-        }
+            return $field;
+        }, $form);
 
         $paginator = $this->contentCategory->select($fields)
             ->with([
+                'content' => function ($query) {
+                    $query->select('id', 'content_category_id', 'visibility', 'type', 'url', 'title');
+                },
                 'user' => function ($query) {
                     $query->select('id', 'full_name');
                 },
             ])
             ->paginate(25);
 
-        return ContentCategoryPaginatedDTO::fromPaginator($paginator, $form);
+        return PaginatedDTO::fromPaginator(
+            $paginator,
+            $form,
+            fn($item) => ContentCategoryDTO::fromModel($item)
+        );
     }
 
     /**
@@ -104,7 +119,7 @@ class ContentCategoryService
      */
     public function create(): array
     {
-        $desiredFields = ['key', 'value', 'is_active'];
+        $desiredFields = ['value', 'is_active'];
 
         $form = $this->buildForm($this->contentCategory, $this->getFields($this->contentCategory, $desiredFields));
 
@@ -113,17 +128,17 @@ class ContentCategoryService
 
     /**
      * Create a new content category.
-     *
-     * @see ContentCategoryPayloadDTO
+     * @param array{value: array<string, string>, is_active?: bool} $payload
      */
-    public function store(ContentCategoryPayloadDTO $payload): int
+    public function store(array $payload): int
     {
-        $contentCategory = ContentCategory::create([
-            'key' => $payload->key,
-            'value' => $payload->value,
-            'is_active' => $payload->is_active,
-            'user_id' => (int) auth()->id(),
-        ]);
+        $data = [
+            'value' => $payload['value'],
+            'is_active' => $payload['is_active'],
+        ];
+        $data['user_id'] = (int) auth()->id();
+
+        $contentCategory = ContentCategory::create($data);
 
         return $contentCategory->id;
     }
@@ -137,7 +152,7 @@ class ContentCategoryService
      */
     public function edit(int $contentCategoryId): array
     {
-        $desiredFields = ['key', 'value', 'is_active'];
+        $desiredFields = ['value', 'is_active'];
 
         $fields = $this->getFields($this->contentCategory, $desiredFields);
 
@@ -154,34 +169,40 @@ class ContentCategoryService
 
     /**
      * Update a content category.
-     *
-     * @see ContentCategoryPayloadDTO
+     * @param array{value: array<string, string>, is_active?: bool} $payload
      */
-    public function update(ContentCategoryPayloadDTO $payload, int $contentCategoryId): ?int
+    public function update(array $payload, int $contentCategoryId): ?int
     {
         $contentCategory = $this->contentCategory->find($contentCategoryId);
         if (! $contentCategory) {
             return null;
         }
 
-        $contentCategory->update([
-            'key' => $payload->key ?? $contentCategory->key,
-            'value' => $payload->value ?? $contentCategory->value,
-            'is_active' => $payload->is_active ?? $contentCategory->is_active,
-            'user_id' => (int) auth()->id(),
-        ]);
+        $data = [
+            'value' => $payload['value'] ?? $contentCategory->value,
+            'is_active' => $payload['is_active'] ?? $contentCategory->is_active,
+        ];
+        $data['user_id'] = (int) auth()->id();
+        $contentCategory->update($data);
 
         return $contentCategory->id;
     }
 
     /**
      * Delete a content category.
+     *
+     * @param int $contentCategoryId
+     * @return bool|int True if deleted, false if not found, -1 if has content
      */
-    public function destroy(int $contentCategoryId): bool
+    public function destroy(int $contentCategoryId): bool|int
     {
         $contentCategory = $this->contentCategory->find($contentCategoryId);
         if (! $contentCategory) {
             return false;
+        }
+
+        if ($contentCategory->content()->exists()) {
+            return -1;
         }
 
         $contentCategory->delete();

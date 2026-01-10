@@ -4,7 +4,6 @@ namespace LiviuVoica\LbCms\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use LiviuVoica\LbCms\DTO\ContentPaginatedDTO;
 use LiviuVoica\LbCms\DTO\ContentPayloadDTO;
 use LiviuVoica\LbCms\DTO\FormFieldDTO;
 use LiviuVoica\LbCms\Models\Content;
@@ -12,12 +11,13 @@ use LiviuVoica\LbCms\Utilities\BuildFormTrait;
 use LiviuVoica\LbCms\Utilities\DesiredFieldsTrait;
 use LiviuVoica\LbCms\Utilities\FilterAndOrderTrait;
 use LiviuVoica\LbCms\Services\ContentCategoryService;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use LiviuVoica\LbCms\DTO\ContentDetailsDTO;
-use LiviuVoica\LbCms\Enums\ContentType;
 use Illuminate\Support\Facades\Storage;
+use LiviuVoica\LbCms\DTO\ContentDTO;
+use LiviuVoica\LbCms\DTO\PaginatedDTO;
 use LiviuVoica\LbCms\Enums\ContentMediaType;
+use LiviuVoica\LbCms\Enums\ContentType;
 
 class ContentService
 {
@@ -94,9 +94,11 @@ class ContentService
      * Get the list of contents.
      *
      * @param array<string, string|int|bool> $params
-     * @see ContentPaginatedDTO
+     * @return PaginatedDTO<ContentDTO>
+     * @see PaginatedDTO
+     * @see ContentDTO
      */
-    public function index(array $params): ContentPaginatedDTO
+    public function index(array $params): PaginatedDTO
     {
         $desiredFields = ['id', 'content_category_id', 'visibility', 'type', 'scheduled_on', 'url', 'title', 'user_id'];
 
@@ -108,13 +110,18 @@ class ContentService
             'visibility' => self::getContentEnum('visibility'),
             'type' => self::getContentEnum('type'),
         ];
-        foreach ($form as $field) {
+        $form = array_map(function (FormFieldDTO $field) use ($formOptions) {
             $key = $field->key;
             if (isset($formOptions[$key])) {
-                $field->type = 'select';
-                $field->options = $formOptions[$key];
+                return FormFieldDTO::fromArray([
+                    'key' => $field->key,
+                    'type' => 'select',
+                    'value' => $field->value,
+                    'options' => $formOptions[$key],
+                ]);
             }
-        }
+            return $field;
+        }, $form);
 
         $query = $this->content->select($fields)
             ->with([
@@ -148,7 +155,11 @@ class ContentService
             return $item;
         });
 
-        return ContentPaginatedDTO::fromPaginator($paginator, $form);
+        return PaginatedDTO::fromPaginator(
+            $paginator,
+            $form,
+            fn($item) => ContentDTO::fromModel($item)
+        );
     }
 
     /**
@@ -193,14 +204,15 @@ class ContentService
             'visibility' => (string) $payload->visibility,
             'type' => (string) $payload->type,
             'scheduled_on' => $payload->scheduled_on,
+            'slug' => (string) $payload->slug,
             'tags' => $payload->tags,
             'title' => $payload->title,
             'content' => $payload->content ?? null,
             'content_media_files' => $payload->content_media_files,
         ];
 
-        $data['slug'] = Str::slug($data['title']);
-        $data['url'] = $this->getContentUrl($data['type'], $data['slug']);
+        $prefix = ContentType::from($payload->type)->urlPrefix();
+        $data['url'] = config('cms.app_name').($prefix !== '' ? "/{$prefix}" : '')."/{$data['slug']}";
         $data['user_id'] = (int) auth()->id();
 
         $content = Content::create($data);
@@ -232,6 +244,7 @@ class ContentService
     public function show(int $contentId): ?ContentDetailsDTO
     {
         $desiredFields = [
+            'id',
             'content_category_id',
             'visibility',
             'type',
@@ -249,7 +262,7 @@ class ContentService
                 'content_category' => function ($query) {
                     $query->select('id', 'value')->where('is_active', true);
                 },
-                'media' => function ($query) {
+                'content_media' => function ($query) {
                     $query->select('id', 'content_id', 'title', 'path');
                 },
                 'user' => function ($query) {
@@ -322,13 +335,14 @@ class ContentService
             'visibility' => (string) $payload->visibility ?? $content->visibility,
             'type' => (string) $payload->type ?? $content->type,
             'scheduled_on' => $payload->scheduled_on ?? $content->scheduled_on,
+            'slug' => (string) $payload->slug ?? $content->slug,
             'tags' => $payload->tags ?? $content->tags,
             'title' => $payload->title ?? $content->title,
             'user_id' => (int) auth()->id(),
         ];
 
-        $data['slug'] = Str::slug($data['title']);
-        $data['url'] = $this->getContentUrl($data['type'], $data['slug']);
+        $prefix = ContentType::from($payload->type)->urlPrefix();
+        $data['url'] = config('cms.app_name').($prefix !== '' ? "/{$prefix}" : '')."/{$data['slug']}";
         $data['user_id'] = (int) auth()->id();
 
         $content->update($data);
@@ -440,21 +454,6 @@ class ContentService
         $content->forceDelete();
 
         return true;
-    }
-
-    /**
-     * @param string $type
-     * @param string $slug
-     * @return string
-     */
-    private function getContentUrl(string $type, string $slug): string
-    {
-        $type = strtolower($type);
-        if ($type === ContentType::ARTICLE) {
-            return config('cms.app_url') . "/blog/{$type}/{$slug}";
-        }
-
-        return config('cms.app_url') . "{$slug}";
     }
 
     /**

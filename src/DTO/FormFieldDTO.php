@@ -1,6 +1,6 @@
 <?php
 
-namespace LiviuVoica\LbContact\DTO;
+namespace LiviuVoica\LbCms\DTO;
 
 final class FormFieldDTO
 {

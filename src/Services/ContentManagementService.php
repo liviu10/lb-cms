@@ -27,6 +27,34 @@ class ContentManagementService
         $this->content = $content;
     }
 
+    public function getContent(string $slug)
+    {
+        $desiredFields = ['id', 'content_category_id', 'url', 'tags', 'title', 'content', 'user_id'];
+
+        $fields = $this->getFields($this->content, $desiredFields);
+        
+        $pageContent = $this->content->select($fields)
+            ->where('visibility', ContentVisibility::PUBLISHED)
+            ->where('slug', $slug)
+            ->with([
+                'content_category' => function ($query) {
+                    $query->select('id', 'value')->where('is_active', true);
+                },
+                'content_media' => function ($query) {
+                    $query->select('id', 'content_id', 'title', 'path');
+                },
+                'user' => function ($query) {
+                    $query->select('id', 'full_name');
+                },
+            ])
+            ->first();
+
+        $locale = (string) app()->getLocale();
+
+        $category = $pageContent->content_category;
+        $pageContent->content_category->value = $content->value[$locale()] ?? $category->value['en'];
+    }
+
     /**
      * Publish scheduled content.
      *
@@ -38,11 +66,10 @@ class ContentManagementService
     {
         $now = Carbon::now();
 
-        $this->content
-            ->where('status', 'Scheduled')
+        $this->content->where('visibility', ContentVisibility::SCHEDULED)
             ->where('scheduled_on', '<=', $now)
             ->update([
-                'status' => ContentVisibility::PUBLISHED,
+                'visibility' => ContentVisibility::PUBLISHED,
                 'published_on' => $now,
             ]);
     }

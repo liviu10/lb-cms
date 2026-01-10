@@ -3,11 +3,15 @@
 namespace LiviuVoica\LbCms\DTO;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use LiviuVoica\LbCms\DTO\FormFieldDTO;
 
-final class ContentVisibilityPaginatedDTO
+/**
+ * @template T
+ */
+final class PaginatedDTO
 {
     /**
-     * @param  ContentVisibilityDTO[]  $data
+     * @param  T[]  $data
      * @param  FormFieldDTO[]  $form
      */
     private function __construct(
@@ -25,15 +29,14 @@ final class ContentVisibilityPaginatedDTO
     ) {}
 
     /**
-     * @param  FormFieldDTO[]  $form
+     * @param  LengthAwarePaginator  $paginator
+     * @param  FormFieldDTO[]        $form
+     * @param  callable(mixed):T     $mapper Funcția care transformă modelul în DTO
+     * @return self<T>
      */
-    public static function fromPaginator(LengthAwarePaginator $paginator, array $form): self
+    public static function fromPaginator(LengthAwarePaginator $paginator, array $form, callable $mapper): self
     {
-        /** @var ContentVisibilityDTO[] $data */
-        $data = array_map(
-            static fn ($item) => ContentVisibilityDTO::fromModel($item),
-            $paginator->items()
-        );
+        $data = array_map($mapper, $paginator->items());
 
         return new self(
             current_page: $paginator->currentPage(),
