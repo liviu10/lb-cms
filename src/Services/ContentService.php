@@ -265,6 +265,9 @@ class ContentService
                 'content_media' => function ($query) {
                     $query->select('id', 'content_id', 'title', 'path');
                 },
+                'content_comments' => function ($query) {
+                    $query->select('id', 'content_id', 'full_name', 'email', 'privacy_policy', 'terms_and_conditions');
+                },
                 'user' => function ($query) {
                     $query->select('id', 'full_name');
                 },
@@ -338,7 +341,8 @@ class ContentService
             'slug' => (string) $payload->slug ?? $content->slug,
             'tags' => $payload->tags ?? $content->tags,
             'title' => $payload->title ?? $content->title,
-            'user_id' => (int) auth()->id(),
+            'content' => $payload->content ?? $content->content,
+            'content_media_files' => $payload->content_media_files,
         ];
 
         $prefix = ContentType::from($payload->type)->urlPrefix();

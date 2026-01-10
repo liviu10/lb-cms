@@ -79,4 +79,10 @@ class Content extends Model
     {
         return $this->hasMany(ContentMedia::class);
     }
+
+    /** @return HasMany<ContentComment> */
+    public function content_comments(): HasMany
+    {
+        return $this->hasMany(ContentComment::class);
+    }
 }

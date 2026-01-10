@@ -12,6 +12,7 @@ final class ContentDetailsDTO
      * @param array{value: int, label: string} $content_category
      * @param array<string> $tags
      * @param array<int, array{id: int, content_id: int, title: string, path: string}> $content_media
+     * @param array<int, array{id: int, content_id: int, full_name: string, email: string, privacy_policy: bool, terms_and_conditions: bool}> $content_comments
      * @param array{id: int, full_name: string} $user
      */
     private function __construct(
